@@ -6,7 +6,7 @@ import (
 
     "github.com/eatmoreapple/openwechat"
 
-    "github.com/longbai/wechatbot/gtp"
+    "github.com/longbai/wechatbot/gpt"
 )
 
 var _ MessageHandlerInterface = (*UserMessageHandler)(nil)
@@ -37,7 +37,7 @@ func (g *UserMessageHandler) ReplyText(msg *openwechat.Message) error {
     // 向GPT发起请求
     requestText := strings.TrimSpace(msg.Content)
     requestText = strings.Trim(msg.Content, "\n")
-    reply, err := gtp.Completions(requestText)
+    reply, err := gpt.Completions(requestText)
     if err != nil {
         log.Printf("gtp request error: %v \n", err)
         _, _ = msg.ReplyText("机器人神了，我一会发现了就去修。")

@@ -1,4 +1,4 @@
-package gtp
+package gpt
 
 import (
     "bytes"
@@ -55,7 +55,7 @@ func Completions(msg string) (string, error) {
     requestBody := ChatGPTRequestBody{
         Model:            "gpt-3.5-turbo",
         Temperature:      0.8, // 每次返回的答案的相似度0-1（0：每次都一样，1：每次都不一样）
-        MaxTokens:        4000,
+        MaxTokens:        3900 - len(msg)*2,
         TopP:             1,
         FrequencyPenalty: 0,
         PresencePenalty:  0.6,
