@@ -13,7 +13,7 @@ type Configuration struct {
     ApiKey string `json:"api_key"`
     // 自动通过好友
     AutoPass bool   `json:"auto_pass"`
-    Proxy    string `json:"proxy"`
+    Backend  string `json:"backend"`
     Model    string `json:"model"`
 }
 

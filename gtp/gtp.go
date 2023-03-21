@@ -79,8 +79,8 @@ func Completions(msg string) (string, error) {
     }
     log.Printf("request gtp json string : %v", string(requestData))
     base := BASEURL
-    if config.LoadConfig().Proxy != "" {
-        base = config.LoadConfig().Proxy
+    if config.LoadConfig().Backend != "" {
+        base = config.LoadConfig().Backend
     }
     req, err := http.NewRequest("POST", base+"v1/chat/completions", bytes.NewBuffer(requestData))
     if err != nil {
