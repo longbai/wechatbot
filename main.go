@@ -21,8 +21,7 @@ func WaitSignal(bot *openwechat.Bot) {
 }
 
 func main() {
-    //bot := openwechat.DefaultBot()
-    bot := openwechat.DefaultBot(openwechat.Desktop) // 桌面模式，上面登录不上的可以尝试切换这种模式
+    bot := openwechat.DefaultBot(openwechat.Desktop) // 桌面模式
 
     // 注册消息处理函数
     bot.MessageHandler = handlers.Handler
@@ -30,7 +29,7 @@ func main() {
     bot.UUIDCallback = openwechat.PrintlnQrcodeUrl
 
     // 创建热存储容器对象
-    reloadStorage := openwechat.NewJsonFileHotReloadStorage("storage.json")
+    reloadStorage := openwechat.NewFileHotReloadStorage("storage.bak")
     // 执行热登录
     err := bot.HotLogin(reloadStorage)
     if err != nil {
@@ -39,6 +38,22 @@ func main() {
             return
         }
     }
+
+    // 获取登陆的用户
+    self, err := bot.GetCurrentUser()
+    if err != nil {
+        log.Println(err)
+        return
+    }
+
+    // 获取所有的好友
+    friends, err := self.Friends()
+    log.Println(friends, err)
+
+    // 获取所有的群组
+    groups, err := self.Groups()
+    log.Println(groups, err)
+
     go WaitSignal(bot)
     // 阻塞主goroutine, 直到发生异常或者用户主动退出
     bot.Block()

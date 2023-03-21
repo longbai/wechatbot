@@ -2,4 +2,6 @@ module github.com/longbai/wechatbot
 
 go 1.20
 
-require github.com/eatmoreapple/openwechat v1.2.1
+require github.com/eatmoreapple/openwechat v1.4.1
+
+replace github.com/eatmoreapple/openwechat => ../openwechat

@@ -49,7 +49,7 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
     log.Printf("Received Group %v %s Text Msg : %v", group.NickName, groupSender.NickName, msg.Content)
 
     // 替换掉@文本，然后向GPT发起请求
-    replaceText := "@" + sender.Self.NickName
+    replaceText := "@" + sender.NickName
     requestText := strings.TrimSpace(strings.ReplaceAll(msg.Content, replaceText, ""))
     reply, err := gtp.Completions(requestText)
     if err != nil {
