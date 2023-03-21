@@ -2,11 +2,23 @@ package main
 
 import (
     "log"
+    "os"
+    "os/signal"
+    "syscall"
 
     "github.com/eatmoreapple/openwechat"
 
     "github.com/longbai/wechatbot/handlers"
 )
+
+//graceful shutdown
+func WaitSignal(bot *openwechat.Bot) {
+    sigCh := make(chan os.Signal, 1)
+    signal.Notify(sigCh, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+    <-sigCh
+    log.Println("exit")
+    bot.Exit()
+}
 
 func main() {
     //bot := openwechat.DefaultBot()
@@ -27,6 +39,7 @@ func main() {
             return
         }
     }
+    go WaitSignal(bot)
     // 阻塞主goroutine, 直到发生异常或者用户主动退出
     bot.Block()
 }

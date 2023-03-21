@@ -14,6 +14,7 @@ type Configuration struct {
     // 自动通过好友
     AutoPass bool   `json:"auto_pass"`
     Proxy    string `json:"proxy"`
+    Model    string `json:"model"`
 }
 
 var config *Configuration

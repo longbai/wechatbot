@@ -33,12 +33,20 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
     // 接收群消息
     sender, err := msg.Sender()
     group := openwechat.Group{sender}
-    log.Printf("Received Group %v Text Msg : %v", group.NickName, msg.Content)
 
     // 不是@的不处理
     if !msg.IsAt() {
         return nil
     }
+
+    // 获取@我的用户
+    groupSender, err := msg.SenderInGroup()
+    if err != nil {
+        log.Printf("get sender in group error :%v \n", err)
+        return err
+    }
+
+    log.Printf("Received Group %v %s Text Msg : %v", group.NickName, groupSender.NickName, msg.Content)
 
     // 替换掉@文本，然后向GPT发起请求
     replaceText := "@" + sender.Self.NickName
@@ -53,18 +61,11 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
         return nil
     }
 
-    // 获取@我的用户
-    groupSender, err := msg.SenderInGroup()
-    if err != nil {
-        log.Printf("get sender in group error :%v \n", err)
-        return err
-    }
-
     // 回复@我的用户
     reply = strings.TrimSpace(reply)
     reply = strings.Trim(reply, "\n")
     atText := "@" + groupSender.NickName
-    replyText := atText + " " + reply
+    replyText := atText + "\n" + reply
     _, err = msg.ReplyText(replyText)
     if err != nil {
         log.Printf("response group error: %v \n", err)
