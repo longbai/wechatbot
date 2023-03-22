@@ -1,12 +1,15 @@
 package handlers
 
 import (
-    "log"
-    "strings"
+	"log"
+	"math/rand"
+	"strings"
+	"sync"
+	"time"
 
-    "github.com/eatmoreapple/openwechat"
+	"github.com/eatmoreapple/openwechat"
 
-    "github.com/longbai/wechatbot/gpt"
+	"github.com/longbai/wechatbot/gpt"
 )
 
 var _ MessageHandlerInterface = (*GroupMessageHandler)(nil)
@@ -17,86 +20,96 @@ type GroupMessageHandler struct {
 
 // handle 处理消息
 func (g *GroupMessageHandler) handle(msg *openwechat.Message) error {
-    if msg.IsText() {
-        return g.ReplyText(msg)
-    }
-    return nil
+	if msg.IsText() {
+		return g.ReplyText(msg)
+	}
+	return nil
 }
 
 // NewGroupMessageHandler 创建群消息处理器
 func NewGroupMessageHandler() MessageHandlerInterface {
-    return &GroupMessageHandler{}
+	return &GroupMessageHandler{}
 }
+
+var random = rand.New(rand.NewSource(time.Now().UnixNano()))
+var lock sync.Mutex
 
 // ReplyText 发送文本消息到群
 func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
-    // 接收群消息
-    sender, err := msg.Sender()
-    group := openwechat.Group{User: sender}
+	// 接收群消息
+	sender, err := msg.Sender()
+	group := openwechat.Group{User: sender}
 
-    // 不是@的不处理
-    if !msg.IsAt() {
-        return nil
-    }
+	// 不是@的不处理
+	if !msg.IsAt() {
+		return nil
+	}
 
-    // 获取@我的用户
-    groupSender, err := msg.SenderInGroup()
-    if err != nil {
-        log.Printf("get sender in group error :%v \n", err)
-        return err
-    }
-    rev, err := msg.Receiver()
-    if err != nil {
-        log.Printf("get receiver in group error :%v \n", err)
-        return err
-    }
+	// 获取@我的用户
+	groupSender, err := msg.SenderInGroup()
+	if err != nil {
+		log.Printf("get sender in group error :%v \n", err)
+		return err
+	}
+	rev, err := msg.Receiver()
+	if err != nil {
+		log.Printf("get receiver in group error :%v \n", err)
+		return err
+	}
 
-    msg.Content = strings.Replace(msg.Content, "\u2005", "", -1)
+	msg.Content = strings.Replace(msg.Content, "\u2005", "", -1)
 
-    log.Printf("Received Group %v %s Text Msg : %v", group.NickName, groupSender.NickName, msg.Content)
+	log.Printf("Received Group %v %s Text Msg : %v", group.NickName, groupSender.NickName, msg.Content)
 
-    atMe := name(rev)
+	atMe := name(rev)
 
-    //去掉 引用的话
-    if v := strings.Split(msg.Content, "\n- - - - - - - - - - - - - - -\n"); len(v) > 1 {
-        msg.Content = v[len(v)-1]
-        if !strings.Contains(msg.Content, atMe) {
-            return nil
-        }
-    }
+	//去掉 引用的话
+	if v := strings.Split(msg.Content, "\n- - - - - - - - - - - - - - -\n"); len(v) > 1 {
+		msg.Content = v[len(v)-1]
+		if !strings.Contains(msg.Content, atMe) {
+			return nil
+		}
+	}
 
-    // 替换掉@文本，然后向GPT发起请求
-    requestText := strings.TrimSpace(strings.ReplaceAll(msg.Content, atMe, ""))
-    reply, err := gpt.Completions(requestText)
-    if err != nil {
-        log.Printf("gtp request error: %v \n", err)
-        _, _ = msg.ReplyText("机器人神了，我一会发现了就去修。")
-        return err
-    }
-    if reply == "" {
-        return nil
-    }
+	// 替换掉@文本，然后向GPT发起请求
+	requestText := strings.TrimSpace(strings.ReplaceAll(msg.Content, atMe, ""))
+	reply, err := gpt.Completions(requestText)
+	if err != nil {
+		log.Printf("gtp request error: %v \n", err)
+		_, _ = msg.ReplyText("机器人神了，我一会发现了就去修。")
+		return err
+	}
+	if reply == "" {
+		return nil
+	}
 
-    // 回复@我的用户
-    reply = strings.TrimSpace(reply)
-    reply = strings.Trim(reply, "\n")
-    replyText := name(groupSender) + "\n" + reply
-    _, err = msg.ReplyText(replyText)
+	// 回复@我的用户
+	reply = strings.TrimSpace(reply)
+	reply = strings.Trim(reply, "\n")
+	replyText := name(groupSender) + "\n" + reply
+	if len(replyText) > 200 {
+		sleeps := len(replyText) / 100
+		lock.Lock()
+		ran := random.Intn(20)
+		lock.Unlock()
+		time.Sleep(time.Duration(sleeps+ran) * time.Second)
+	}
+	_, err = msg.ReplyText(replyText)
 
-    if err != nil {
-        log.Printf("response group error: %v \n", err)
-    }
-    return err
+	if err != nil {
+		log.Printf("response group error: %v \n", err)
+	}
+	return err
 }
 
 func name(u *openwechat.User) string {
 
-    displayName := u.DisplayName
-    if displayName == "" {
-        displayName = u.NickName
-    }
-    var atFlag string
-    atName := openwechat.FormatEmoji(displayName)
-    atFlag = "@" + atName
-    return atFlag
+	displayName := u.DisplayName
+	if displayName == "" {
+		displayName = u.NickName
+	}
+	var atFlag string
+	atName := openwechat.FormatEmoji(displayName)
+	atFlag = "@" + atName
+	return atFlag
 }
